@@ -7,7 +7,7 @@ public class Neighbours 																// one object is created for each neighb
 	int port;
 	double weight;
 	int timeout;
-	int up_status;																// keeps track of whether the link is up or down
+	int up_status;																		// keeps track of whether the link is up or down
 
 	Neighbours(InetAddress addr, int port, double weight, int timeout, int up_status)
 	{

@@ -10,8 +10,9 @@ public class bfclient
 
 	static int sockets_open = 0;
 	static Route_update rup;
-	static DatagramSocket read_socket;
-	static DatagramSocket write_socket;
+	static DatagramSocket read_message_socket;
+	static DatagramSocket send_update_socket;
+	static DatagramSocket send_result_socket;
 	static InetAddress ip;
 	static Map<String, Neighbours> neighbours;
 	static int port;	
@@ -19,7 +20,8 @@ public class bfclient
 	static int timeout;	
 	static int default_neighbour_timeout;
 	static final int MAX_NODE = 20;												// number of maxium nodes in the network	
-	static final double MAX_COST = 9999;										// it implies infinity
+	static final double MAX_COST = 9999;											// it implies infinity
+	static final int MAX_MESSAGE_SIZE = 4096;
 	static String key[]=new String[MAX_NODE];									// combination from ipaddress:portno
 
 
@@ -33,8 +35,9 @@ public class bfclient
     		{
 	    		if(sockets_open == 1)
 	    		{
-	    			read_socket.close();
-	    			write_socket.close();
+	    			read_message_socket.close();
+	    			send_update_socket.close();
+	    			send_result_socket.close();
 	    		}
     		}
     		catch(Exception e)
@@ -145,15 +148,17 @@ public class bfclient
 				String socket;
 				
 
-				//read_socket = new DatagramSocket(Integer.parseInt(argv[0])); 							// socket where all Input messages will be read (ROUTEUPDATE, LINKDOWN, LINKUP, SHOWRT)
-				//write_socket = new DatagramSocket();													// socket from where all output messages will be sent (ROUTEUPDATE, LINKDOWN, LINKUP, CLOSE)
-				//sockets_open = 1;																		// close sockets only if sockets are opened
+				read_message_socket = new DatagramSocket(Integer.parseInt(argv[0])); 					// socket where all Input messages will be read (ROUTEUPDATE, LINKDOWN, LINKUP)
+				send_result_socket = new DatagramSocket();												// socket from where all result messages will be sent (LINKDOWN, LINKUP, CLOSE)
+				send_update_socket = new DatagramSocket();												// socket from where route_update message will be sent to all neighbours
+				
+				sockets_open = 1;																		// close sockets only if sockets are opened
 
 
 				neighbours = new HashMap<String, Neighbours>();											// Hashmap of keys(IP:PORT) and corresponding neighbour object
 				
-				Cost_of_link col;
-				Map<String,Cost_of_link> rt = new HashMap<String,Cost_of_link>();
+				Cost_and_link_to_node col;																// cost to corresponding node
+				Map<String,Cost_and_link_to_node> rt = new HashMap<String,Cost_and_link_to_node>();
 
 				timeout = Integer.parseInt(argv[1]);													// timeout for this node
 
@@ -161,7 +166,7 @@ public class bfclient
 				{
 					// set initial parameters for the route_update object, later only nodes and dv will be updated
 
-					default_neighbour_timeout = timeout;											// set the default neighbour timeout until real timeout is received in the route update 
+					default_neighbour_timeout = timeout;												// set the default neighbour timeout until real timeout is received in the route update 
 				
 					n_addr = InetAddress.getByName(argv[++j]);
 					n_port = Integer.parseInt(argv[++j]);
@@ -172,19 +177,25 @@ public class bfclient
 
 					neighbours.put(key[i],new Neighbours(n_addr , n_port , n_weight , n_timeout , n_up_status));	// add other neighbouring nodes to the neighbours hashmap
 
-					col = new Cost_of_link(n_weight,key[i]);
-					rt.put(key[i],col);
-					// update the routing_update object
+					col = new Cost_and_link_to_node(n_weight,key[i]);											// update cost of node and its link through which shortest path can be found
+					rt.put(key[i],col); 
 				}
 
 				rup = new Route_update(rt);																// Route_update object --> this object is sent to neighbouring nodes
-				rup.own_ip = ip = InetAddress.getLocalHost();										// ip address of this nodes
-				rup.own_port = port = Integer.parseInt(argv[0]);									// port of this node
-				rup.own_timeout = timeout;								// timeout for this node
+				rup.own_ip = ip = InetAddress.getLocalHost();											// ip address of this nodes
+				rup.own_port = port = Integer.parseInt(argv[0]);										// port of this node
+				rup.own_timeout = timeout;																// timeout for this node
 
+
+				// call the send_update thread
+				Timer t = new Timer();
+				Send_update send_update = new Send_update();
+				
+       			t.schedule(send_update,0,(long)timeout*1000);
 
 				// just for testing
-				showrt();
+				//showrt();
+
 
 			}
 			else
@@ -193,9 +204,17 @@ public class bfclient
 			}
 
 		}
+		catch(SocketException e)
+		{
+			System.out.println("\nSocket disconnected");
+		}
+		catch(IOException e)
+		{
+			System.out.println(e); 
+		}
 		catch(Exception e)
 		{
-			System.out.println("Exception caught: " + e);
+		 	System.out.println(e);
 		}
 	}
 }
