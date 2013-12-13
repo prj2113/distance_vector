@@ -10,5 +10,4 @@ public class Message implements Serializable
 		this.message_name = message_name;
 		this.rup = rup;
 	}
-
 }

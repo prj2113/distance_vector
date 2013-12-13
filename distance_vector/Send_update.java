@@ -34,7 +34,7 @@ public class Send_update extends TimerTask
 					bfclient.send_update_socket.send(packet);
 				}
 				//testing statement;
-				System.out.println("packet sent to neighboour: " + key);
+				//System.out.println("packet sent to neighboour: " + key);
 			}
 			bfclient.rup.changed_status = 0;
 		}

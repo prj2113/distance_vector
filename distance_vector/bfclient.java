@@ -63,7 +63,7 @@ public class bfclient
 		}
   		else if( !(Integer.parseInt(argv[0])>=1024 && Integer.parseInt(argv[0])<=65535) )			// localport should be only between 1024 to 65535
 		{
-			System.out.println("The localport should only be between 0 to 65535");
+			System.out.println("The localport should only be between 1024 to 65535");
 		}
 		else if( !(argv[1].matches("^[0-9]+$")) )													// timeout should contain only numbers
 		{
@@ -85,7 +85,7 @@ public class bfclient
 				}
 		  		else if( !(Integer.parseInt(argv[j])>=1024 && Integer.parseInt(argv[j])<=65535) )	// port should be only between 1024 to 65535
 				{
-					System.out.println("The port of neighbour " +i+ " should only be between 0 to 65535");
+					System.out.println("The port of neighbour " +i+ " should only be between 1024 to 65535");
 					break;
 				}
 				else if( !(argv[++j].matches("^[0-9]+[.]{1}[0-9]+$|^[0-9]+$")) )					// weight can be only integer or float
@@ -110,15 +110,7 @@ public class bfclient
   		}
   	}
 
-  	// display routing table for this node
-  	public static void showrt()
-  	{
-  		for( int i = 0 ; i < rt.size() ; i++ )
-		{
-			System.out.println("Destination = " + key[i] + ", cost = " + rup.route_table.get(key[i]).cost +" , Link = " + rup.route_table.get(key[i]).link);	
-		}
-  	}
-
+  	
 	public static void main(String argv[])
 	{
 		try
@@ -194,7 +186,18 @@ public class bfclient
 
        			Thread.sleep(1000);																		// so that atleast first route update is sent correctly
 
-       			bfclient.showrt();
+       			// start user_input thread
+       			User_input ui = new User_input();
+       			Thread t1 = new Thread(ui);
+       			t1.start();
+
+       			// start read_thread
+       			/* Thread t2 = new Thread();
+       			Read_message rm = new Read_message();
+       			t2.start();
+       			*/
+        			
+
        			while(true)
        			{
        				if(rup.changed_status == 1)															// if the distance vector has changed then send route update and reset timer
