@@ -7,6 +7,7 @@ public class Route_update implements Serializable
 	InetAddress own_ip;
 	int own_port;
 	int own_timeout;
+	int changed_status;
 	Map<String,Cost_and_link_to_node> route_table;
 
 	Route_update(Map<String,Cost_and_link_to_node> route_table)

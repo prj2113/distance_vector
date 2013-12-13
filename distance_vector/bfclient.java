@@ -15,6 +15,8 @@ public class bfclient
 	static DatagramSocket send_result_socket;
 	static InetAddress ip;
 	static Map<String, Neighbours> neighbours;
+	static Map<String,Cost_and_link_to_node> rt;
+	static Cost_and_link_to_node col;																// cost to corresponding node
 	static int port;	
 	static int tuples;															// number of neighbours
 	static int timeout;	
@@ -111,7 +113,7 @@ public class bfclient
   	// display routing table for this node
   	public static void showrt()
   	{
-  		for( int i = 0 ; i < tuples ; i++ )
+  		for( int i = 0 ; i < rt.size() ; i++ )
 		{
 			System.out.println("Destination = " + key[i] + ", cost = " + rup.route_table.get(key[i]).cost +" , Link = " + rup.route_table.get(key[i]).link);	
 		}
@@ -145,7 +147,6 @@ public class bfclient
 				double n_weight;																		// neighbours port
 				int n_timeout;																			// neighbour timeout
 				int n_up_status;																		// neighbour status
-				String socket;
 				
 
 				read_message_socket = new DatagramSocket(Integer.parseInt(argv[0])); 					// socket where all Input messages will be read (ROUTEUPDATE, LINKDOWN, LINKUP)
@@ -157,8 +158,8 @@ public class bfclient
 
 				neighbours = new HashMap<String, Neighbours>();											// Hashmap of keys(IP:PORT) and corresponding neighbour object
 				
-				Cost_and_link_to_node col;																// cost to corresponding node
-				Map<String,Cost_and_link_to_node> rt = new HashMap<String,Cost_and_link_to_node>();
+				
+				rt = new HashMap<String,Cost_and_link_to_node>();
 
 				timeout = Integer.parseInt(argv[1]);													// timeout for this node
 
@@ -174,27 +175,40 @@ public class bfclient
 					n_timeout = default_neighbour_timeout;
 					n_up_status = 1;
 					key[i] = n_addr.getHostAddress()+":"+n_port;										// add other neighbouring nodes to the nodes list
-
 					neighbours.put(key[i],new Neighbours(n_addr , n_port , n_weight , n_timeout , n_up_status));	// add other neighbouring nodes to the neighbours hashmap
-
 					col = new Cost_and_link_to_node(n_weight,key[i]);											// update cost of node and its link through which shortest path can be found
-					rt.put(key[i],col); 
+					rt.put(key[i],col); 																// PJ: whenever a new node is added -> put it in rt
 				}
 
 				rup = new Route_update(rt);																// Route_update object --> this object is sent to neighbouring nodes
 				rup.own_ip = ip = InetAddress.getLocalHost();											// ip address of this nodes
 				rup.own_port = port = Integer.parseInt(argv[0]);										// port of this node
 				rup.own_timeout = timeout;																// timeout for this node
+				rup.changed_status = 1;
 
 
 				// call the send_update thread
 				Timer t = new Timer();
 				Send_update send_update = new Send_update();
-				
-       			t.schedule(send_update,0,(long)timeout*1000);
+       			t.schedule(send_update,0,(long)timeout*1000);	
 
+       			Thread.sleep(1000);																		// so that atleast first route update is sent correctly
+
+       			bfclient.showrt();
+       			while(true)
+       			{
+       				if(rup.changed_status == 1)															// if the distance vector has changed then send route update and reset timer
+       				{
+       					send_update.send_route_update();
+       					t.cancel();
+       					t = new Timer();
+       					t.schedule(new Send_update(),0,(long)timeout*1000);
+       					System.out.println("reseted timer");
+       					rup.changed_status = 0;
+       				}
+       				
+       			}
 				// just for testing
-				//showrt();
 
 
 			}

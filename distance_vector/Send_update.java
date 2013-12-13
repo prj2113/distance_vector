@@ -11,7 +11,7 @@ public class Send_update extends TimerTask
 	static byte buf[]= new byte[bfclient.MAX_MESSAGE_SIZE];
 	static DatagramPacket packet;
 
-	public void run()
+	public void send_route_update()
 	{
 		try
 		{
@@ -22,24 +22,28 @@ public class Send_update extends TimerTask
 		    oos = new ObjectOutputStream(byos);
 			oos.writeObject(m);
 			oos.flush();
-			buf = byos.toByteArray();						// writes object to byte array
+			buf = byos.toByteArray();																// writes object to byte array
 
 			for (String key : bfclient.neighbours.keySet()) 
 			{
-				addr = bfclient.neighbours.get(key).addr;
-				port = bfclient.neighbours.get(key).port;
-				packet = new DatagramPacket(buf, buf.length, addr, port);	
-				bfclient.send_update_socket.send(packet);
-
+				if(bfclient.neighbours.get(key).up_status == 1)										// send only to those neighbours whose link is cuurently up.
+				{
+					addr = bfclient.neighbours.get(key).addr;
+					port = bfclient.neighbours.get(key).port;
+					packet = new DatagramPacket(buf, buf.length, addr, port);	
+					bfclient.send_update_socket.send(packet);
+				}
 				//testing statement;
 				System.out.println("packet sent to neighboour: " + key);
 			}
+			bfclient.rup.changed_status = 0;
 		}
+		catch(NotSerializableException e){}
+
 		catch(SocketException e)
 		{
 			System.out.println("\nSocket disconnected");
 		}
-		catch(NotSerializableException e){}
 		catch(IOException e)
 		{
 			System.out.println(e); 
@@ -48,6 +52,11 @@ public class Send_update extends TimerTask
 		{
 		 	System.out.println(e);
 		}
+	}
 
+	public void run()
+	{
+		Send_update su = new Send_update();
+		su.send_route_update();
 	}
 }
