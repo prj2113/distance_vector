@@ -163,10 +163,15 @@ public class User_input extends bfclient implements Runnable
  	// display routing table for this node
  	void showrt()
  	{
+ 		Date date = new Date();	
+		SimpleDateFormat fmt =  new SimpleDateFormat ("yyyy/MM/dd - HH:mm:ss");
+ 		System.out.println(fmt.format(date) + "	Distance vector list is:");
+
   		for( int i = 0 ; i < rt.size() ; i++ )
 		{
 			System.out.println("Destination = " + key[i] + ", cost = " + rup.route_table.get(key[i]).cost +" , Link = " + rup.route_table.get(key[i]).link);	
 		}
+		System.out.println("After some time, new nodes might be added as they are discovered.");
  	}
 
  	void close_cmd()
@@ -190,7 +195,7 @@ public class User_input extends bfclient implements Runnable
 				porterror = 0;
 				formaterror = 0;
 
-				System.out.println("Type the action required:\n 1. LINKDOWN {ip_address port} \n 2. LINKUP {ip_address port} \n 3. SHOWRT \n 4. CLOSE");
+				System.out.println("\nType the action required:\n 1. LINKDOWN {ip_address port} \n 2. LINKUP {ip_address port} \n 3. SHOWRT \n 4. CLOSE");
 				command = br.readLine();
 				String s[] =command.split(" ");
 
@@ -247,7 +252,7 @@ public class User_input extends bfclient implements Runnable
 				}
 				else
 				{
-					System.out.println("Do you want to run more actions: default is N. choose (Y/N)");
+					System.out.println("\nDo you want to run more actions: default is N. choose (Y/N)");
 					cont = br.readLine();
 				}
 			}
