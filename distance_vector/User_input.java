@@ -6,55 +6,158 @@ import java.text.*;
 
 public class User_input extends bfclient implements Runnable
 {
-	String s[] = new String[3];
 	int iperror = 0;
 	int porterror = 0;
 	int formaterror = 0;
 	int ret = -1;
+	ByteArrayOutputStream byos;
+	ObjectOutputStream oos;
+	byte buf[]= new byte[MAX_MESSAGE_SIZE];
+	DatagramPacket packet;
 
-	int validate()
+	int validate(String s[])
 	{
 		ret = -1;
-		if( !(s[1].matches("^(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}$")) )   				//allows v.x.y.z or localhost
+		//System.out.println(s[1]+" "+s[2]);
+		if( (s.length == 3) )
 		{
-			iperror = 1;
-		} 
-		else if( !(s[2].matches("^[0-9]+$")) )											// allows only numbers
-		{
-			porterror = 1;
-		}
-  		else if( !(Integer.parseInt(s[2]) >=1024 && Integer.parseInt(s[2]) <=65535) )	// port should be only between 1024 to 65535
-		{
-			porterror = 1;
+			if( !(s[1].matches("^(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}$")) )   				//allows v.x.y.z or localhost
+			{
+				iperror = 1;
+			} 
+			else if( !(s[2].matches("^[0-9]+$")) )											// allows only numbers
+			{
+				porterror = 1;
+			}
+	  		else if( !(Integer.parseInt(s[2]) >=1024 && Integer.parseInt(s[2]) <=65535) )	// port should be only between 1024 to 65535
+			{
+				porterror = 1;
+			}
+			else
+			{
+				ret = 0;
+			}
+
+			if( ret != 0)
+			{
+				if(iperror == 1)
+				{
+					System.out.println("ERROR: ipaddress should be in format v.x.y.z where v,x,y,z can only be numbers < 256\n");			
+				}
+				else if(porterror == 1)
+				{
+					System.out.println("ERROR:  The port should only be between 1024 to 65535 and can contain only numbers");
+				}
+			}
 		}
 		else
 		{
-			ret = 0;
+			ret = -1;
+			System.out.println("ERROR: either IP or port is not entered ; or some extra values are entered");
 		}
-
-		if( ret != 0)
-		{
-			if(iperror == 1)
-			{
-				System.out.println("ipaddress should be in format v.x.y.z where v,x,y,z can only be numbers < 256\n");			
-			}
-			else if(porterror == 1)
-			{
-				System.out.println("The port should only be between 1024 to 65535 and can contain only numbers");
-			}
-		}
+		
 		return ret;
 	}
 
-
-	void linkdown()
+	// PJ: still need to handle via links i.e if A -> B -> C and link A -> B breaks, then what to do about link C.
+	void linkdown(String s[])														
 	{
+		try
+		{
+			String socket  = "" + s[1] + ":" + s[2];
+			int isneighbour = 0;
+			String k="";
+			for(String key : neighbours.keySet())
+			{
+				if(key.equals(socket) && neighbours.get(key).up_status==1)
+				{
+					isneighbour = 1;
+					neighbours.get(key).up_status = 0;
+					k = key;
+					break;
+				}
+			}
+			if(isneighbour == 1)
+			{
+				rup.route_table.get(k).cost = MAX_COST;
+				rup.route_table.get(k).link = null;
+				rup.changed_status = 1;
 
+				Message m = new Message("linkdown",rup);
+				InetAddress addr;
+				int port;
+				byos = new ByteArrayOutputStream();
+			    oos = new ObjectOutputStream(byos);
+				oos.writeObject(m);
+				oos.flush();
+
+				buf = byos.toByteArray();
+
+				addr = neighbours.get(k).addr;
+				port = neighbours.get(k).port;
+				packet = new DatagramPacket(buf, buf.length, addr, port);	
+				bfclient.send_update_socket.send(packet);
+			}
+			else
+			{
+				System.out.println("ERROR: either linkis already down or the given node is not a neighbour");
+			}
+		}
+		catch(NotSerializableException e){}
+		catch(Exception e)
+		{
+		 	System.out.println(e);
+		}
 	}
  	
- 	void linkup()
+ 	void linkup(String s[])
  	{
+ 		try
+		{
+			String socket  = "" + s[1] + ":" + s[2];
+			int isneighbour = 0;
+			String k="";
+			for(String key : neighbours.keySet())
+			{
+				if(key.equals(socket) && neighbours.get(key).up_status==0)
+				{
+					isneighbour = 1;
+					neighbours.get(key).up_status = 1;
+					k = key;
+					break;
+				}
+			}
+			if(isneighbour == 1)
+			{
+				rup.route_table.get(k).cost = neighbours.get(k).weight;
+				rup.route_table.get(k).link = k;
+				rup.changed_status = 1;
 
+				Message m = new Message("linkup",rup);
+				InetAddress addr;
+				int port;
+				byos = new ByteArrayOutputStream();
+			    oos = new ObjectOutputStream(byos);
+				oos.writeObject(m);
+				oos.flush();
+
+				buf = byos.toByteArray();
+
+				addr = neighbours.get(k).addr;
+				port = neighbours.get(k).port;
+				packet = new DatagramPacket(buf, buf.length, addr, port);	
+				bfclient.send_update_socket.send(packet);
+			}
+			else
+			{
+				System.out.println("ERROR: either linkis already up or the given node is not a neighbour");
+			}
+		}
+		catch(NotSerializableException e){}
+		catch(Exception e)
+		{
+		 	System.out.println(e);
+		}
  	}
 
  	// display routing table for this node
@@ -68,7 +171,8 @@ public class User_input extends bfclient implements Runnable
 
  	void close_cmd()
  	{
-
+ 		System.out.println("Node is shutdown");
+ 		System.exit(0);
  	}
 
 	public void run()
@@ -82,23 +186,22 @@ public class User_input extends bfclient implements Runnable
 
 			while(cont.equals("Y") == true)
 			{
-				System.out.println("userthread started");
 				iperror = 0;
 				porterror = 0;
 				formaterror = 0;
 
 				System.out.println("Type the action required:\n 1. LINKDOWN {ip_address port} \n 2. LINKUP {ip_address port} \n 3. SHOWRT \n 4. CLOSE");
 				command = br.readLine();
-				s=command.split(" ");
+				String s[] =command.split(" ");
 
 				switch(s[0])
 				{
 					case "LINKDOWN":
 					{
-						ret = ui.validate();
+						ret = ui.validate(s);
 						if(ret != -1)
 						{
-							ui.linkdown();	
+							ui.linkdown(s);	
 							break;
 						}
 						else
@@ -108,10 +211,10 @@ public class User_input extends bfclient implements Runnable
 					}
 					case "LINKUP":
 					{
-						ret = ui.validate();
+						ret = ui.validate(s);
 						if(ret != -1)
 						{
-							ui.linkup();	
+							ui.linkup(s);	
 							break;
 						}
 						else
@@ -132,7 +235,7 @@ public class User_input extends bfclient implements Runnable
 					}
 					default:
 					{
-						System.out.println("Format error: please enter commands in the exact format");
+						System.out.println("ERROR: Format error: please enter commands in the exact format");
 						formaterror = 1;
 						break;
 					}
@@ -159,10 +262,6 @@ public class User_input extends bfclient implements Runnable
 			{
 				System.out.println("Node is active.. If you want to terminate later, just press ctrl-c");
 			}
-		}
-		catch(IOException e)
-		{
-			System.out.println(e); 
 		}
 		catch(Exception e)
 		{

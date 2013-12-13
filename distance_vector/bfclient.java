@@ -196,7 +196,6 @@ public class bfclient
        			Read_message rm = new Read_message();
        			t2.start();
        			*/
-        			
 
        			while(true)
        			{
@@ -211,8 +210,6 @@ public class bfclient
        				}
        				
        			}
-				// just for testing
-
 
 			}
 			else

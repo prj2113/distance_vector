@@ -6,10 +6,10 @@ import java.text.*;
 
 public class Send_update extends TimerTask
 {
-	static ByteArrayOutputStream byos;
-	static ObjectOutputStream oos;
-	static byte buf[]= new byte[bfclient.MAX_MESSAGE_SIZE];
-	static DatagramPacket packet;
+	ByteArrayOutputStream byos;
+	ObjectOutputStream oos;
+	byte buf[]= new byte[bfclient.MAX_MESSAGE_SIZE];
+	DatagramPacket packet;
 
 	public void send_route_update()
 	{
