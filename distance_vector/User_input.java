@@ -10,6 +10,7 @@ public class User_input extends bfclient implements Runnable
 	int porterror = 0;
 	int formaterror = 0;
 	int ret = -1;
+	static int uicalled = 0;
 	ByteArrayOutputStream byos;
 	ObjectOutputStream oos;
 	byte buf[]= new byte[MAX_MESSAGE_SIZE];
@@ -66,7 +67,7 @@ public class User_input extends bfclient implements Runnable
 		{
 			String socket  = "" + s[1] + ":" + s[2];
 			int isneighbour = 0;
-			String k="";
+			String k= "";
 			for(String key : neighbours.keySet())
 			{
 				if(key.equals(socket) && neighbours.get(key).up_status==1)
@@ -77,10 +78,15 @@ public class User_input extends bfclient implements Runnable
 					break;
 				}
 			}
+
 			if(isneighbour == 1)
 			{
+				// go through the rt table for all key's , check for which all nodes is the link as k ..make those also null.. do this itertatively until no more changes
 				rup.route_table.get(k).cost = MAX_COST;
 				rup.route_table.get(k).link = null;
+				uicalled = 1;
+				processing.linkdown_calculation(k);
+				uicalled = 0;
 
 				Message m = new Message("linkdown",rup);
 				InetAddress addr;
@@ -137,7 +143,7 @@ public class User_input extends bfclient implements Runnable
 			{
 				rup.route_table.get(k).cost = neighbours.get(k).weight;
 				rup.route_table.get(k).link = k;
-
+			
 				Message m = new Message("linkup",rup);
 				InetAddress addr;
 				int port;

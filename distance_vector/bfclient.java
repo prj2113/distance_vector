@@ -17,6 +17,7 @@ public class bfclient
 	static Timer t; 
 	static Send_update send_update ;
 	static Map<String, Neighbours> neighbours;
+	static Map<String, Cost_and_link_to_node> ndv;
 	static Map<String,Cost_and_link_to_node> rt;
 	static Cost_and_link_to_node col;																// cost to corresponding node
 	static int port;	
@@ -154,8 +155,9 @@ public class bfclient
 				
 				
 				rt = new HashMap<String,Cost_and_link_to_node>();
-
+				ndv = new HashMap<String,Cost_and_link_to_node>();
 				timeout = Integer.parseInt(argv[1]);													// timeout for this node
+
 
 				for( int i = 0 ; i < tuples ; i++ )
 				{
@@ -169,7 +171,7 @@ public class bfclient
 					n_timeout = default_neighbour_timeout;
 					n_up_status = 1;
 					key[i] = n_addr.getHostAddress()+":"+n_port;										// add other neighbouring nodes to the nodes list
-					neighbours.put(key[i],new Neighbours(n_addr , n_port , n_weight , n_timeout , n_up_status));	// add other neighbouring nodes to the neighbours hashmap
+					neighbours.put(key[i],new Neighbours(n_addr , n_port , n_weight , n_timeout , n_up_status, ndv));	// add other neighbouring nodes to the neighbours hashmap
 					col = new Cost_and_link_to_node(n_weight,key[i]);											// update cost of node and its link through which shortest path can be found
 					rt.put(key[i],col); 																// PJ: whenever a new node is added -> put it in rt
 				}

@@ -32,9 +32,10 @@ public class Send_update extends TimerTask
 					port = bfclient.neighbours.get(key).port;
 					packet = new DatagramPacket(buf, buf.length, addr, port);	
 					bfclient.send_update_socket.send(packet);
+					//testing statement;
+					System.out.println("packet sent to neighboour: " + key);
 				}
-				//testing statement;
-				System.out.println("packet sent to neighboour: " + key);
+				
 			}
 		}
 		catch(NotSerializableException e){}
