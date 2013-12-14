@@ -81,7 +81,6 @@ public class User_input extends bfclient implements Runnable
 			{
 				rup.route_table.get(k).cost = MAX_COST;
 				rup.route_table.get(k).link = null;
-				rup.changed_status = 1;
 
 				Message m = new Message("linkdown",rup);
 				InetAddress addr;
@@ -96,7 +95,14 @@ public class User_input extends bfclient implements Runnable
 				addr = neighbours.get(k).addr;
 				port = neighbours.get(k).port;
 				packet = new DatagramPacket(buf, buf.length, addr, port);	
-				bfclient.send_update_socket.send(packet);
+				send_result_socket.send(packet);
+
+				// for testing
+				System.out.println("reseted timer");
+				send_update.send_route_update();
+				t.cancel();
+				t = new Timer();
+				t.schedule(new Send_update(),(long)timeout*1000,(long)timeout*1000);
 			}
 			else
 			{
@@ -131,7 +137,6 @@ public class User_input extends bfclient implements Runnable
 			{
 				rup.route_table.get(k).cost = neighbours.get(k).weight;
 				rup.route_table.get(k).link = k;
-				rup.changed_status = 1;
 
 				Message m = new Message("linkup",rup);
 				InetAddress addr;
@@ -146,7 +151,14 @@ public class User_input extends bfclient implements Runnable
 				addr = neighbours.get(k).addr;
 				port = neighbours.get(k).port;
 				packet = new DatagramPacket(buf, buf.length, addr, port);	
-				bfclient.send_update_socket.send(packet);
+				send_result_socket.send(packet);
+
+				// for testing
+				System.out.println("reseted timer");
+				send_update.send_route_update();
+				t.cancel();
+				t = new Timer();
+				t.schedule(new Send_update(),(long)timeout*1000,(long)timeout*1000);
 			}
 			else
 			{

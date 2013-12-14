@@ -15,7 +15,7 @@ public class Send_update extends TimerTask
 	{
 		try
 		{
-			Message m = new Message("ROUTE_UPDATE",bfclient.rup);
+			Message m = new Message("routeupdate",bfclient.rup);
 			InetAddress addr;
 			int port;
 			byos = new ByteArrayOutputStream();
@@ -34,9 +34,8 @@ public class Send_update extends TimerTask
 					bfclient.send_update_socket.send(packet);
 				}
 				//testing statement;
-				//System.out.println("packet sent to neighboour: " + key);
+				System.out.println("packet sent to neighboour: " + key);
 			}
-			bfclient.rup.changed_status = 0;
 		}
 		catch(NotSerializableException e){}
 

@@ -14,6 +14,8 @@ public class bfclient
 	static DatagramSocket send_update_socket;
 	static DatagramSocket send_result_socket;
 	static InetAddress ip;
+	static Timer t; 
+	static Send_update send_update ;
 	static Map<String, Neighbours> neighbours;
 	static Map<String,Cost_and_link_to_node> rt;
 	static Cost_and_link_to_node col;																// cost to corresponding node
@@ -176,12 +178,10 @@ public class bfclient
 				rup.own_ip = ip = InetAddress.getLocalHost();											// ip address of this nodes
 				rup.own_port = port = Integer.parseInt(argv[0]);										// port of this node
 				rup.own_timeout = timeout;																// timeout for this node
-				rup.changed_status = 1;
-
 
 				// call the send_update thread
-				Timer t = new Timer();
-				Send_update send_update = new Send_update();
+				t = new Timer();
+				send_update = new Send_update();
        			t.schedule(send_update,0,(long)timeout*1000);	
 
        			Thread.sleep(1000);																		// so that atleast first route update is sent correctly
@@ -197,19 +197,6 @@ public class bfclient
        			t2.start();
        			*/
 
-       			while(true)
-       			{
-       				if(rup.changed_status == 1)															// if the distance vector has changed then send route update and reset timer
-       				{
-       					send_update.send_route_update();
-       					t.cancel();
-       					t = new Timer();
-       					t.schedule(new Send_update(),0,(long)timeout*1000);
-       					System.out.println("reseted timer");
-       					rup.changed_status = 0;
-       				}
-       				
-       			}
 
 			}
 			else
