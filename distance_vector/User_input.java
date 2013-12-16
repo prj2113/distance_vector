@@ -21,7 +21,6 @@ public class User_input extends bfclient implements Runnable
 	int validate(String s[])
 	{
 		ret = -1;
-		//System.out.println(s[1]+" "+s[2]);
 		if( (s.length == 3) )
 		{
 			if( !(s[1].matches("^(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}$")) )   				//allows v.x.y.z or localhost
@@ -62,7 +61,6 @@ public class User_input extends bfclient implements Runnable
 		return ret;
 	}
 
-	// PJ: still need to handle via links i.e if A -> B -> C and link A -> B breaks, then what to do about link C.
 	void linkdown(String s[])														
 	{
 		try
@@ -70,12 +68,13 @@ public class User_input extends bfclient implements Runnable
 			String socket  = "/" + s[1] + ":" + s[2];
 			int isneighbour = 0;
 			String k= "";
+			// check if given socket address is a neighbour
 			for(String key : neighbours.keySet())
 			{
 				if(key.equals(socket) && neighbours.get(key).up_status==1)
 				{
 					isneighbour = 1;
-					neighbours.get(key).up_status = 0;
+					neighbours.get(key).up_status = 0;					// mark the neighbour as down
 					k = key;
 					break;
 				}
@@ -83,18 +82,18 @@ public class User_input extends bfclient implements Runnable
 
 			if(isneighbour == 1)
 			{
-				//go through the rt table for all key's , check for which all nodes is the link as k ..make those also null.. do this itertatively until no more changes
-				processing.linkdown_calculation(k);
+				//go through the rt table for all key's , check for which all nodes is the link as k ..update this.. do this itertatively until no more changes
+				processing.linkdown_calculation(k);						
 
 				Message m = new Message("linkdown",rup);
 				InetAddress addr;
 				int port;
 				byos = new ByteArrayOutputStream();
 			    oos = new ObjectOutputStream(byos);
-				oos.writeObject(m);
+				oos.writeObject(m);	
 				oos.flush();
 
-																			// writes object to byte array
+																			
 				buf = byos.toByteArray();																// writes object to byte array
 				
 				ByteBuffer bb = ByteBuffer.wrap(buf);
@@ -139,7 +138,9 @@ public class User_input extends bfclient implements Runnable
 				
 
 				// for testing
-				System.out.println("reseted timer due to user cmd linkdown");
+				// System.out.println("reseted timer due to user cmd linkdown");
+
+				// as soon as distance vector changes, reset timer and send update message
 				send_update.send_route_update();
 				t.cancel();
 				t = new Timer();
@@ -171,13 +172,14 @@ public class User_input extends bfclient implements Runnable
 				if(key.equals(socket) && neighbours.get(key).up_status==0)
 				{
 					isneighbour = 1;
-					neighbours.get(key).up_status = 1;
+					neighbours.get(key).up_status = 1;						// mark node as up
 					k = key;
 					break;
 				}
 			}
 			if(isneighbour == 1)
 			{
+				// restore to original value
 				rup.route_table.get(k).cost = neighbours.get(k).weight;
 				rup.route_table.get(k).link = k;
 			
@@ -228,7 +230,8 @@ public class User_input extends bfclient implements Runnable
 		            System.err.println("ERROR: " +(e.getMessage()!=null?e.getMessage():""));
 		        }
 
-				System.out.println("reseted timer due to user command linkup");
+				// System.out.println("reseted timer due to user command linkup");
+				// as soon as distance vector changes, reset timer and send update message
 				send_update.send_route_update();
 				t.cancel();
 				t = new Timer();
@@ -254,7 +257,7 @@ public class User_input extends bfclient implements Runnable
 		SimpleDateFormat fmt =  new SimpleDateFormat ("yyyy/MM/dd - HH:mm:ss");
  		System.out.println(fmt.format(date) + "	Distance vector list is:");
 
-  		for( int i = 0 ; i < rt.size() ; i++ )
+  		for( int i = 1 ; i < rt.size() ; i++ )
 		{
 			System.out.println("Destination = " + key[i] + ", cost = " + rup.route_table.get(key[i]).cost +" , Link = " + rup.route_table.get(key[i]).link);	
 		}
@@ -263,7 +266,6 @@ public class User_input extends bfclient implements Runnable
 
  	void close_cmd()
  	{
- 		System.out.println("Node is shutdown");
  		System.exit(0);
  	}
 

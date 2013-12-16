@@ -7,11 +7,11 @@ public class Neighbours 																// one object is created for each neighb
 	InetAddress addr;
 	int port;
 	double weight;
-	int timeout;
+	long timeout;
 	int up_status;																		// keeps track of whether the link is up or down
 	Map<String,Cost_and_link_to_node> neighbour_dv;
 
-	Neighbours(InetAddress addr, int port, double weight, int timeout, int up_status, Map<String,Cost_and_link_to_node> neighbour_dv)
+	Neighbours(InetAddress addr, int port, double weight, long timeout, int up_status, Map<String,Cost_and_link_to_node> neighbour_dv)
 	{
 		this.addr = addr;
 		this.port = port;

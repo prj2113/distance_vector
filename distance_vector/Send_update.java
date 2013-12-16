@@ -31,7 +31,7 @@ public class Send_update extends TimerTask
 
 			for (String key : bfclient.neighbours.keySet()) 
 			{
-				ByteBuffer bb = ByteBuffer.wrap(buf);
+				ByteBuffer bb = ByteBuffer.wrap(buf);												// convert bytearray to bytebuffer for sending over datagram channel
 				if(bfclient.neighbours.get(key).up_status == 1)										// send only to those neighbours whose link is cuurently up.
 				{
 					try 
@@ -55,7 +55,7 @@ public class Send_update extends TimerTask
 			                        addr = bfclient.neighbours.get(key).addr;
 									port = bfclient.neighbours.get(key).port;
 									sa = new InetSocketAddress(addr,port);
-									int ret = chan.send(bb,sa);
+									int ret = chan.send(bb,sa);														// send bytebuffer over this channel
 									bb.clear();
 									// testing statement
 									// System.out.println("packet sent to neighbour: " + key + " success:" + ret);

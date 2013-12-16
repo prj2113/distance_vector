@@ -12,22 +12,23 @@ public class bfclient
 {
 
 	static Route_update rup;
-	static DatagramChannel send_update_socket;
+	static DatagramChannel send_update_socket;									// this channel with selector is used to send route updates as well likndown,linkup messages
 	static Selector selector;
 	static SelectionKey updateKey;
 	static InetAddress ip;
 	static Timer t; 
 	static Send_update send_update ;
-	static Map<String, Neighbours> neighbours;
-	static Map<String, Cost_and_link_to_node> ndv;
-	static Map<String,Cost_and_link_to_node> rt;
-	static Cost_and_link_to_node col;																// cost to corresponding node
+	static Map<String, Neighbours> neighbours;									// Keeps all information about each neighbour
+	static Map<String, Cost_and_link_to_node> ndv;								// keeps the distance vector of each node
+	static Map<String,Cost_and_link_to_node> rt;								// it keeps the routing table of this node
+	static Map<String,Neighbour_timeout> nt; 									// it keeps the timeout values and last_received packet timestamp for each node ---> to implement 3*timeout feature
+	static Cost_and_link_to_node col;											// cost to corresponding node
 	static int port;	
 	static int tuples;															// number of neighbours
 	static int timeout;	
-	static int default_neighbour_timeout;
+	static long default_neighbour_timeout;
 	static final int MAX_NODE = 20;												// number of maxium nodes in the network	
-	static final double MAX_COST = 9999;											// it implies infinity
+	static final double INFINITY = 999999;										// it implies infinity
 	static final int MAX_MESSAGE_SIZE = 1024;
 	static String key[]=new String[MAX_NODE];									// combination from ipaddress:portno
 
@@ -37,7 +38,7 @@ public class bfclient
   		Runtime.getRuntime().addShutdownHook(new Thread() 
   		{
    			public void run() {
-   			System.out.println("Node is not shutdown");
+   			System.out.println("Node is now shutdown");
    		}
   	});
   	}
@@ -129,7 +130,7 @@ public class bfclient
 				InetAddress n_addr;																		// neighbours address
 				int n_port;																				// neighbpurs port
 				double n_weight;																		// neighbours port
-				int n_timeout;																			// neighbour timeout
+				long n_timeout;																			// neighbour timeout
 				int n_up_status;																		// neighbour status
 				
 				selector = Selector.open(); 
@@ -137,18 +138,18 @@ public class bfclient
 				send_update_socket.configureBlocking(false);
 				updateKey = send_update_socket.register(selector, SelectionKey.OP_WRITE);
 
-				sockets_open = 1;																		// close sockets only if sockets are opened
-
 
 				neighbours = new HashMap<String, Neighbours>();											// Hashmap of keys(IP:PORT) and corresponding neighbour object
 				
 				
 				rt = new HashMap<String,Cost_and_link_to_node>();
 				ndv = new HashMap<String,Cost_and_link_to_node>();
+				nt  = new HashMap<String,Neighbour_timeout>();
 				timeout = Integer.parseInt(argv[1]);													// timeout for this node
 
 
-				for( int i = 0 ; i < tuples ; i++ )
+
+				for( int i = 1 ; i <=tuples ; i++ )
 				{
 					// set initial parameters for the route_update object, later only nodes and dv will be updated
 
@@ -161,8 +162,9 @@ public class bfclient
 					n_up_status = 1;
 					key[i] = n_addr + ":" + n_port;
 					neighbours.put(key[i],new Neighbours(n_addr , n_port , n_weight , n_timeout , n_up_status, ndv));	// add other neighbouring nodes to the neighbours hashmap
-					col = new Cost_and_link_to_node(n_weight,key[i]);											// update cost of node and its link through which shortest path can be found
-					rt.put(key[i],col); 																// PJ: whenever a new node is added -> put it in rt
+					nt.put(key[i],new Neighbour_timeout(new Date(),(long)n_timeout));
+					col = new Cost_and_link_to_node(n_weight,key[i]);									// update cost of node and its link through which shortest path can be found
+					rt.put(key[i],col); 																// whenever a new node is added -> put it in rt
 				}
 
 				rup = new Route_update(rt);																// Route_update object --> this object is sent to neighbouring nodes
@@ -170,28 +172,33 @@ public class bfclient
 				String tmp_ip = InetAddress.getLocalHost().getHostAddress();
 				String s[] = tmp_ip.split("/");
 				tmp_ip = s[0];
-				rup.own_ip = ip = InetAddress.getByName(tmp_ip);											// ip address of this nodes
+				rup.own_ip = ip = InetAddress.getByName(tmp_ip);										// ip address of this nodes
 
 				rup.own_port = port = Integer.parseInt(argv[0]);										// port of this node
 				rup.own_timeout = timeout;																// timeout for this node
+				key[0] = ip+":"+port;
+				col = new Cost_and_link_to_node(0,key[0]);
+				rt.put(key[0],col);																		// first entry in the routing table is always its own
 
 				// call the send_update thread
 				t = new Timer();
 				send_update = new Send_update();
-       			t.schedule(send_update,0,(long)timeout*1000);	
-
-       			Thread.sleep(1000);																		// so that atleast first route update is sent correctly
+       			t.schedule(send_update,0,(long)timeout*1000);											// This class sends route_update packet to all active nodes periodically
 
        			//start user_input thread
-       			User_input ui = new User_input();
-       			Thread t1 = new Thread(ui);
+       			User_input ui = new User_input();														// This thread is responsible for handling user_input
+       			Thread t1 = new Thread(ui);	
        			t1.start();
 
        			// start read_thread
-       			Read_message rm = new Read_message();
+       			Read_message rm = new Read_message();													// This class reads all packets received but this node like linkup, linkdown, routeupdate
        			Thread t2 = new Thread(rm);
        			t2.start();
        		
+       			Thread.sleep(1000);
+       			Check_aliveness check_aliveness = new Check_aliveness();								// This thread keeps checking its neighbouring nodes whether its alive or not.
+       			Thread t3 = new Thread(check_aliveness);												// if a node doesnt send an update within 3*timeout, then its considered down
+       			t3.start();	
 
 
 			}
