@@ -3,6 +3,8 @@ import java.util.*;
 import java.lang.*;
 import java.io.*;
 import java.text.*;
+import java.nio.*;
+import java.nio.channels.*;
 
 public class User_input extends bfclient implements Runnable
 {
@@ -10,11 +12,11 @@ public class User_input extends bfclient implements Runnable
 	int porterror = 0;
 	int formaterror = 0;
 	int ret = -1;
-	static int uicalled = 0;
 	ByteArrayOutputStream byos;
 	ObjectOutputStream oos;
 	byte buf[]= new byte[MAX_MESSAGE_SIZE];
 	DatagramPacket packet;
+	SocketAddress sa;
 
 	int validate(String s[])
 	{
@@ -65,7 +67,7 @@ public class User_input extends bfclient implements Runnable
 	{
 		try
 		{
-			String socket  = "" + s[1] + ":" + s[2];
+			String socket  = "/" + s[1] + ":" + s[2];
 			int isneighbour = 0;
 			String k= "";
 			for(String key : neighbours.keySet())
@@ -81,12 +83,8 @@ public class User_input extends bfclient implements Runnable
 
 			if(isneighbour == 1)
 			{
-				// go through the rt table for all key's , check for which all nodes is the link as k ..make those also null.. do this itertatively until no more changes
-				rup.route_table.get(k).cost = MAX_COST;
-				rup.route_table.get(k).link = null;
-				uicalled = 1;
+				//go through the rt table for all key's , check for which all nodes is the link as k ..make those also null.. do this itertatively until no more changes
 				processing.linkdown_calculation(k);
-				uicalled = 0;
 
 				Message m = new Message("linkdown",rup);
 				InetAddress addr;
@@ -96,19 +94,57 @@ public class User_input extends bfclient implements Runnable
 				oos.writeObject(m);
 				oos.flush();
 
-				buf = byos.toByteArray();
+																			// writes object to byte array
+				buf = byos.toByteArray();																// writes object to byte array
+				
+				ByteBuffer bb = ByteBuffer.wrap(buf);
+				try
+				{
+					selector.select();
+					Iterator selectedKeys = bfclient.selector.selectedKeys().iterator();
+					while(selectedKeys.hasNext())
+					{
+						try
+						{
+							SelectionKey key_select = (SelectionKey) selectedKeys.next();
+							selectedKeys.remove();
+							if (!key_select.isValid()) 
+							{
+		                        continue;
+		                    }
 
-				addr = neighbours.get(k).addr;
-				port = neighbours.get(k).port;
-				packet = new DatagramPacket(buf, buf.length, addr, port);	
-				send_result_socket.send(packet);
+		                    if (key_select.isWritable()) 
+		                    {
+		                    	DatagramChannel chan = (DatagramChannel)key_select.channel();
+		                        addr = bfclient.neighbours.get(k).addr;
+								port = bfclient.neighbours.get(k).port;
+								sa = new InetSocketAddress(addr,port);
+								int ret = chan.send(bb,sa);
+								bb.clear();
+								
+							}
+						}
+						catch (IOException e) 
+		                {
+		                    System.err.println("ERROR: " + (e.getMessage()!=null?e.getMessage():""));
+		                }
+					}
+
+				}
+				catch (IOException e) 
+		        {
+		            System.err.println("ERROR: " +(e.getMessage()!=null?e.getMessage():""));
+		        }
+
+				
 
 				// for testing
-				System.out.println("reseted timer");
+				System.out.println("reseted timer due to user cmd linkdown");
 				send_update.send_route_update();
 				t.cancel();
 				t = new Timer();
 				t.schedule(new Send_update(),(long)timeout*1000,(long)timeout*1000);
+				bb.clear();
 			}
 			else
 			{
@@ -126,11 +162,12 @@ public class User_input extends bfclient implements Runnable
  	{
  		try
 		{
-			String socket  = "" + s[1] + ":" + s[2];
+			String socket  = "/" + s[1] + ":" + s[2];
 			int isneighbour = 0;
 			String k="";
 			for(String key : neighbours.keySet())
 			{
+
 				if(key.equals(socket) && neighbours.get(key).up_status==0)
 				{
 					isneighbour = 1;
@@ -151,20 +188,52 @@ public class User_input extends bfclient implements Runnable
 			    oos = new ObjectOutputStream(byos);
 				oos.writeObject(m);
 				oos.flush();
+				buf = byos.toByteArray();																// writes object to byte array
+				ByteBuffer bb = ByteBuffer.wrap(buf);
+				try
+				{
+					selector.select();
+					Iterator selectedKeys = bfclient.selector.selectedKeys().iterator();
+					while(selectedKeys.hasNext())
+					{
+						try
+						{
+							SelectionKey key_select = (SelectionKey) selectedKeys.next();
+							selectedKeys.remove();
+							if (!key_select.isValid()) 
+							{
+		                        continue;
+		                    }
 
-				buf = byos.toByteArray();
+		                    if (key_select.isWritable()) 
+		                    {
+		                    	DatagramChannel chan = (DatagramChannel)key_select.channel();
+		                        addr = bfclient.neighbours.get(k).addr;
+								port = bfclient.neighbours.get(k).port;
+								sa = new InetSocketAddress(addr,port);
+								int ret = chan.send(bb,sa);
+								bb.clear();
+								
+							}
+						}
+						catch (IOException e) 
+		                {
+		                    System.err.println("ERROR: " + (e.getMessage()!=null?e.getMessage():""));
+		                }
+					}
 
-				addr = neighbours.get(k).addr;
-				port = neighbours.get(k).port;
-				packet = new DatagramPacket(buf, buf.length, addr, port);	
-				send_result_socket.send(packet);
+				}
+				catch (IOException e) 
+		        {
+		            System.err.println("ERROR: " +(e.getMessage()!=null?e.getMessage():""));
+		        }
 
-				// for testing
-				System.out.println("reseted timer");
+				System.out.println("reseted timer due to user command linkup");
 				send_update.send_route_update();
 				t.cancel();
 				t = new Timer();
 				t.schedule(new Send_update(),(long)timeout*1000,(long)timeout*1000);
+				bb.clear();
 			}
 			else
 			{
