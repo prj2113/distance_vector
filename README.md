@@ -1,5 +1,5 @@
-** This folder contains the following programs **
-=================================================
+This folder contains the following programs
+===========================================
 	
 	bfclient.java					--> main program , all other classes are called through this
 	Check_aliveness.java			--> keeps track of neighbours status
@@ -15,22 +15,21 @@
 	Makefile						--> compiles all these files
 
 	
-** NOTE **
-==========
-	All nodes should use different ports and for ip address please use the host address and not localhost or 127.0.0.1.
-	All user commands should be entered in CAPITAL Letters only
-	Please enter same weights for example, a->b = 5 then b->a = 5
-	INFINITY is represented as 999999.
+NOTE
+====
+All nodes should use different ports and for ip address please use the host address and not localhost or 127.0.0.1.	All user commands should be entered in CAPITAL Letters only
+Please enter same weights for example, a->b = 5 then b->a = 5
+INFINITY is represented as 999999.
 
-** PROGRAM EXECUTION ** 
-=======================
+PROGRAM EXECUTION 
+=================
 	1. Run make 
 	2. open one terminal for each node and run ----> java bfclient localport timeout [ipaddress1 port1 weight1 ...]
 	3. Run any user command as directed in the cmd prompt --> just follow the instructions carefully on the cmd prompt
 
-** EXAMPLE ** 
-=============
-	(replace the ip accoringing to machine on which the program is being executed and weights can be entered in decimal as well)
+EXAMPLE 
+=======
+(replace the ip accoringing to machine on which the program is being executed and weights can be entered in decimal as well)
 
 	make
 	java bfclient 5000 2 160.39.207.151 6000 3 160.39.207.151 8000 7
@@ -39,28 +38,31 @@
 	java bfclient 8000 8 160.39.207.151 5000 7 160.39.207.151 7000 1 160.39.207.151 9000 4
 	java bfclient 9000 2 160.39.207.151 8000 4
 
+INFORMATION MAINTAINENCE DETAILS
+================================
+I have implemented distance vector routing protocol using object oriented programming. All information is mainly stored in Hashmaps using socket address ( IP:PORT ) as key
+Maintainece of various information is done:
 
-** INFORMATION MAINTAINENCE DETAILS **
-======================================
-	I have implemented distance vector routing protocol using object oriented programming. All information is mainly stored in Hashmaps using socket address ( IP:PORT ) as key
-	Maintainece of various information is done:
-		1. 	Local informtion about the node
-			This information is maintained in the route_update object. 
-			It contains its ipaddress, portno, timeout and a HashMap for maintaining the routing table.
-			The routing table contains the tuples --> {destination, cost_to_the destination, first_hop_node} 
-		2.	Information about each neighbour
-			One object of this class is created for each neighbour.
-			It stores information like ipaddr, port, weight, timeout value, up_status and the routing table of each neighbour
-		3.	Information to keep track of the aliveness of each neighbour
-			A hashmap neighbour_time using socket address as the key keeps 2 information --> time of last received route update packet from that neighbour and its timeout
-		4. 	Message trasnferred between 2 nodes
-			This object encapsulates the message type and route_update object. 
-			The various message types are : linkup, linkdown and routeupdate.
-			Nodes communicate using this message object passed over non-blocking I/O datagram channels. The non-blocking is achieved using selector.
-			Each node has one selector for the read_socket and one selector for write_socket.
+	1. 	Local informtion about the node
+		This information is maintained in the route_update object. 
+		It contains its ipaddress, portno, timeout and a HashMap for maintaining the routing table.
+		The routing table contains the tuples --> {destination, cost_to_the destination, first_hop_node} 
 
-** IMPLEMENTATION **
-====================
+	2.	Information about each neighbour
+		One object of this class is created for each neighbour.
+		It stores information like ipaddr, port, weight, timeout value, up_status and the routing table of each neighbour
+
+	3.	Information to keep track of the aliveness of each neighbour
+		A hashmap neighbour_time using socket address as the key keeps 2 information --> time of last received route update packet from that neighbour and its timeout
+
+	4. 	Message trasnferred between 2 nodes
+		This object encapsulates the message type and route_update object. 
+		The various message types are : linkup, linkdown and routeupdate.
+		Nodes communicate using this message object passed over non-blocking I/O datagram channels. The non-blocking is achieved using selector.
+		Each node has one selector for the read_socket and one selector for write_socket.
+
+IMPLEMENTATION
+===============
 	- Initially, when a node is started it stores it own information and the information of neighbours directly mentioned in the commandline. 
 	- It also, creates an initial routing table
 	- A timer is set to its timeout value. Thus, periodically a routeupdate is sent to each active neighbour.
