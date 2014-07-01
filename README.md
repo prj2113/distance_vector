@@ -1,4 +1,5 @@
-*** This folder contains the following programs : 
+<u>This folder contains the following programs</u>
+<ul>
 	bfclient.java					--> main program , all other classes are called through this
 	Check_aliveness.java			--> keeps track of neighbours status
 	Read_message.java				--> handles all commands received by the node		
@@ -11,6 +12,7 @@
 	Neighbour_timeout.java			--> contains timestamp and timeout values corresponding to each neighbour
 	Neighbours.java					--> keeps all information related to each neighbour
 	Makefile						--> compiles all these files
+</ul>
 	
 *** NOTE ***
 	All nodes should use different ports and for ip address please use the host address and not localhost or 127.0.0.1.
